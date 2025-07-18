@@ -1,22 +1,23 @@
-# Sử dụng image Node.js chính thức
+# Base image
 FROM node:18
 
-# Tạo thư mục làm việc trong container
+# Tạo thư mục app
 WORKDIR /app
 
-# Copy toàn bộ project (trừ những thứ trong .dockerignore)
-COPY . .
+# Copy package.json và lock file trước để cache
+COPY package*.json ./
 
-# Cài đặt phụ thuộc
+# Cài đặt dependencies
 RUN npm install
 
-# Build NestJS
+# Copy phần còn lại của code
+COPY . .
+
+# Build NestJS (ra thư mục dist/)
 RUN npm run build
 
-# Mở port 3000 (hoặc bạn đang dùng port nào thì mở port đó)
+# Mở port
 EXPOSE 3000
 
-# Chạy app
+# Chạy app đã build
 CMD ["node", "dist/main"]
-# Hoặc nếu bạn muốn chạy với ts-node (dùng cho môi trường phát triển)
-# CMD ["npm", "run", "start:dev"]
