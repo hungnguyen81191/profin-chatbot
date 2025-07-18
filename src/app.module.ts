@@ -39,6 +39,8 @@ import { ChatBotLog } from './features/chat/entities/chatbot-log.entity';
     //Dùng test local
     // MongooseModule.forRoot('mongodb://127.0.0.1:27017/ChatbotDB'),
 
+    //  MongooseModule.forRoot('mongodb://localhost/ChatbotDB'),
+
     ChunkModule,
     ChatbotModule,
   ],
