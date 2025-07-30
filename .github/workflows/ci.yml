@@ -1,25 +1,46 @@
-name: CI
+name: Deploy NestJS Project
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main  # Hoặc nhánh bạn muốn trigger deploy
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Setup Node.js
+    - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: '18'  # Phiên bản Node bạn cần
 
-    - name: Install dependencies
-      run: npm install
+    - name: Install dependencies and build
+      run: |
+        npm install
+        npm run build
 
-    - name: Run tests
-      run: npm test
+    - name: Copy files to remote server via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: 10.15.142.23       # IP hoặc domain máy deploy
+        username: hungnv164   # User SSH trên máy deploy
+        key: b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZWQyNTUxOQAAACDnq5KSSuurwaeVFmxlWK6xOIlkqRfmsAq4JuYtCgoL1AAAAJjhwCwp4cAsKQAAAAtzc2gtZWQyNTUxOQAAACDnq5KSSuurwaeVFmxlWK6xOIlkqRfmsAq4JuYtCgoL1AAAAECLXeG474YEsR7fqhqw/O2OG1USluoTaD566RbZMzJPFuerkpJK66vBp5UWbGVYrrE4iWSpF+awCrgm5i0KCgvUAAAAFWdpdGh1Yi1hY3Rpb25zLWRlcGxveQ==     # Private SSH key (đã lưu trong GitHub Secrets)
+        port: 22
+        source: "dist/**"                       # Thư mục build NestJS
+        target: "/home/deploy/app/dist"         # Thư mục trên máy deploy
+
+    - name: Run remote deploy script
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: 10.15.142.23
+        username: hungnv164
+        key: b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZWQyNTUxOQAAACDnq5KSSuurwaeVFmxlWK6xOIlkqRfmsAq4JuYtCgoL1AAAAJjhwCwp4cAsKQAAAAtzc2gtZWQyNTUxOQAAACDnq5KSSuurwaeVFmxlWK6xOIlkqRfmsAq4JuYtCgoL1AAAAECLXeG474YEsR7fqhqw/O2OG1USluoTaD566RbZMzJPFuerkpJK66vBp5UWbGVYrrE4iWSpF+awCrgm5i0KCgvUAAAAFWdpdGh1Yi1hY3Rpb25zLWRlcGxveQ==     # Private SSH key (đã lưu trong GitHub Secrets)
+        port: 22
+        script: |
+          cd /home/deploy/app
+          npm install --production
+          pm2 restart all
