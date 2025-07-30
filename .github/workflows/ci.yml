@@ -3,7 +3,8 @@ name: Deploy NestJS Project
 on:
   push:
     branches:
-      - main  # Hoặc nhánh bạn muốn trigger deploy
+      #- main  # Hoặc nhánh bạn muốn trigger deploy
+      -dev
 
 jobs:
   deploy:
