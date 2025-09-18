@@ -9,6 +9,10 @@ import { ChunkModule } from './features/chunk/chunk.module';
 import { ChatbotModule } from './features/chat/chatbot.module';
 import { ConfigModule } from '@nestjs/config';
 import { ChatBotLog } from './features/chat/entities/chatbot-log.entity';
+import { SessionSchema, Session} from './features/chat/schemas/session.schema';
+import { ChatHistory, ChatHistorySchema } from './features/chat/schemas/chat-history.schema';
+import { Embedding, EmbeddingSchema } from './features/chat/schemas/embedding.schema';
+import { SemanticModule } from './features/chat/semantic-search/semantic-search.module';
 
 @Module({
   imports: [
@@ -34,19 +38,24 @@ import { ChatBotLog } from './features/chat/entities/chatbot-log.entity';
     TypeOrmModule.forFeature([ChatBotLog]),
 
     // Dùng cho Docker
-    MongooseModule.forRoot('mongodb://host.docker.internal:27017/ChatbotDB'),
+    // MongooseModule.forRoot('mongodb://host.docker.internal:27017/ChatbotDB'),
 
     //Dùng test local
-    // MongooseModule.forRoot('mongodb://127.0.0.1:27017/ChatbotDB'),
-
+    MongooseModule.forRoot('mongodb://127.0.0.1:27017/ChatbotDB'),
+    MongooseModule.forFeature([
+      { name: ChatHistory.name, schema: ChatHistorySchema },
+      { name: Session.name, schema: SessionSchema },
+      { name: Embedding.name, schema: EmbeddingSchema },
+    ]),
     //  MongooseModule.forRoot('mongodb://localhost/ChatbotDB'),
 
     ChunkModule,
     ChatbotModule,
+    SemanticModule
   ],
   controllers: [AppController,
     ChunkController,
-    ChatbotController
+    ChatbotController,
   ],
   providers: [AppService],
 })

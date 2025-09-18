@@ -3,40 +3,35 @@ import {
   Get,
   Post,
   Body,
-  Req,
-  Res,
   UseInterceptors,
-  UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { Request, Response } from 'express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('chat')
 export class ChatbotController {
   constructor(private readonly chatService: ChatbotService) {}
 
+  // Lấy toàn bộ lịch sử chat (theo user hiện tại)
   @Get()
-  async getChats() {
-    try {
-      const chats = await this.chatService.getAllChats();
-      return chats;
-    } catch (error) {
-      console.error('Error:', error);
-    }
+  async getChats(@Body() user: string) {
+    return this.chatService.getAllChats(user);
   }
 
-  @Post('lastest-reply')
-  async getLastestReply(@Body() req: any) {
-    return this.chatService.getLastestReply(req);
+  // Lấy câu trả lời cuối cùng (ví dụ hiển thị realtime trên FE)
+  @Post('latest-reply')
+  async getLastestReply(@Body() body: any) {
+    return this.chatService.getLastestReply(body);
   }
 
+  // Gửi message mới + có thể kèm file
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FilesInterceptor('files')) // form-data field name: "files"
   async sendMessage(
-    @UploadedFile() files: Express.Multer.File[],
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() body: any,
-  ): Promise<{ reply: string }> {
+  ) {
     return this.chatService.sendMessage(body, files);
   }
 }
