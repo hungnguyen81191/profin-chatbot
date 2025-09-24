@@ -1,37 +1,30 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  UseInterceptors,
-  UploadedFiles,
-} from '@nestjs/common';
-import { ChatbotService } from './chatbot.service';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
+import { ChatService } from './chatbot.service';
+import { Message } from './schemas/message.schema';
 
 @Controller('chat')
-export class ChatbotController {
-  constructor(private readonly chatService: ChatbotService) {}
+export class ChatController {
+  constructor(private readonly chatService: ChatService) {}
 
-  // Lấy toàn bộ lịch sử chat (theo user hiện tại)
-  @Get()
-  async getChats(@Body() user: string) {
-    return this.chatService.getAllChats(user);
-  }
-
-  // Lấy câu trả lời cuối cùng (ví dụ hiển thị realtime trên FE)
-  @Post('latest-reply')
-  async getLastestReply(@Body() body: any) {
-    return this.chatService.getLastestReply(body);
-  }
-
-  // Gửi message mới + có thể kèm file
-  @Post()
-  @UseInterceptors(FilesInterceptor('files')) // form-data field name: "files"
-  async sendMessage(
-    @UploadedFiles() files: Express.Multer.File[],
-    @Body() body: any,
+  @Post('message')
+  async addMessage(
+    @Body() Body: { sessionId: string; message: Message },
   ) {
-    return this.chatService.sendMessage(body, files);
+    return this.chatService.addMessage(Body.sessionId, Body.message);
+  }
+
+  @Get('session/:id')
+  async getSession(@Param('id') id: string) {
+    return this.chatService.getSession(id);
+  }
+
+  @Get('sessions')
+  async listSessions() {
+    return this.chatService.listSessions();
+  }
+
+  @Get('session-histories')
+  async getAllSession(@Query('username') username: string) {
+    return this.chatService.getAllSession(username)
   }
 }

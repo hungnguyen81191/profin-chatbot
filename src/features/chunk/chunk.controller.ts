@@ -7,9 +7,9 @@ import {
   import { ChunkService } from './chunk.service';
   import * as fs from 'fs';
   import * as path from 'path';
-  import { getEmbedding } from '../../untils/embedding-helper';
+  import { getEmbedding } from '../../utils/embedding-helper';
   import { DocumentChunk } from './schemas/chunk.schema';
-  import { readPdfText, readDocxText, readExcelText } from '../../untils/file-reader';
+  import { readPdfText, readDocxText, readExcelText } from '../../utils/file-reader';
   import { splitIntoChunks } from '../../common/text.helper';
   
   @Controller('chunk')
