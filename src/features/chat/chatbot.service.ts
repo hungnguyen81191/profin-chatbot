@@ -4,12 +4,14 @@ import { Model } from 'mongoose';
 import { Session, SessionDocument } from './schemas/session.schema';
 import { Message, MessageDocument } from './schemas/message.schema';
 import { getQuestionFromImagesAndPrompt } from '../../common/images.helper';
+import { ChunkService } from '../chunk/chunk.service';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+    private readonly chunkService: ChunkService,
   ) {}
 
   async createSession(sessionId: string): Promise<Session> {
@@ -34,7 +36,15 @@ export class ChatService {
     } else {
       session.lastUpdated = new Date();
       await session.save();
-      // this.replyMessage();
+      var replyMessage = await this.replyMessage(message, base64Images);
+      await this.messageModel.create({
+      sessionId,
+      user: 'bot',
+      content: replyMessage || 'Không có phản hồi',
+      sender: 'assistant',
+      createdAt: new Date(),
+    });
+
     }
 
     const msg = new this.messageModel({
@@ -50,11 +60,18 @@ export class ChatService {
     return msg;
   }
 
-  async replyMessage(message: Message) {
+  async replyMessage(message: Message, base64Images: string[]) {
     var promptTxt = message.content;
-    var base64Images = [];
     const apiKey = process.env.OPENAI_API_KEY || '';
-    getQuestionFromImagesAndPrompt(promptTxt, base64Images, apiKey)
+    var quest = await getQuestionFromImagesAndPrompt(promptTxt, base64Images, apiKey);
+    var ans = await this.chunkService.getTopChunksHybrid(quest, [], 3, 0.5) ;
+    if (!ans || ans.length === 0) {
+    return [{
+      content: 'Xin lỗi, tôi chưa tìm thấy nội dung phù hợp để trả lời câu hỏi.'
+      }];
+    }
+
+    return ans;
   }
 
   async getSession(sessionId: string): Promise<Session | null> {

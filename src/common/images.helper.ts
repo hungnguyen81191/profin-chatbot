@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-export async function getQuestionFromImagesAndPrompt(promtTxt: string, base64Images: string[], apiKey: string) {
+export async function getQuestionFromImagesAndPrompt(promtTxt: string, base64Images: string[], apiKey: string): Promise<string> {
     const headers = {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'

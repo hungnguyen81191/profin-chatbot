@@ -9,10 +9,13 @@ import { Message, MessageSchema } from './schemas/message.schema';
 import { Session, SessionSchema } from './schemas/session.schema';
 
 @Module({
-  imports: [MongooseModule.forFeature([
+  imports: [
+    MongooseModule.forFeature([
       { name: Session.name, schema: SessionSchema },
       { name: Message.name, schema: MessageSchema },
-    ]),],
+    ]),
+    ChunkModule,
+  ],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],
