@@ -1,14 +1,14 @@
 // src/chunk/chunk.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { DocumentChunk } from './schemas/chunk.schema';
+import { DocumentChunk, DocumentChunkDocument } from './schemas/chunk.schema';
 import { Model } from 'mongoose';
 
 @Injectable()
 export class ChunkService {
   constructor(
     @InjectModel(DocumentChunk.name)
-    private readonly chunkModel: Model<DocumentChunk>,
+    private readonly chunkModel: Model<DocumentChunkDocument>,
   ) {}
 
   async addChunk(chunk: Partial<DocumentChunk>) {
@@ -44,16 +44,44 @@ export class ChunkService {
     return scored.map((x) => x.doc);
   }
 
-  async getTopChunksHybrid(query: string, vector: number[], topN = 3, threshold = 0.6): Promise<DocumentChunk[]> {
-    // Tuỳ bạn muốn kết hợp query từ text search hay không
-    return this.getTopChunks(vector, topN, threshold);
-  }
+  // async getTopChunksHybrid(query: string, vector: number[], topN = 3, threshold = 0.6): Promise<DocumentChunk[]> {
+  //   return this.getTopChunks(vector, topN, threshold);
+  // }
+  async getTopChunksHybrid(query: string, vector: number[], topN = 3, threshold = 0.6) {
+  const textMatches = await this.chunkModel
+    .find({ $text: { $search: query } }, { score: { $meta: 'textScore' } })
+    .sort({ score: { $meta: 'textScore' } })
+    .limit(topN * 2)
+    .exec();
+
+  const hybrid = textMatches
+    .map((doc) => ({
+      doc,
+      score: cosineSimilarity(vector, doc.embedding ?? []),
+    }))
+    .filter((x) => x.score >= threshold)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topN);
+
+  return hybrid.map((x) => x.doc);
 }
 
-// Helper: cosine similarity
+}
+
+// function cosineSimilarity(a: number[], b: number[]): number {
+//   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+//   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+//   const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+//   return dot / (magA * magB);
+// }
+
 function cosineSimilarity(a: number[], b: number[]): number {
+  if (!a || !b || a.length !== b.length) return 0;
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
   const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-  return dot / (magA * magB);
+  return magA && magB ? dot / (magA * magB) : 0;
 }
+
+
+

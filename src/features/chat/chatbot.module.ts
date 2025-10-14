@@ -1,15 +1,23 @@
 // chatbot.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ChatbotController } from './chatbot.controller';
-import { ChatbotService } from './chatbot.service';
-import { ChatBotLog } from './entities/chatbot-log.entity';
-import { ChunkModule } from '../chunk/chunk.module';
+import { ChatController } from './chatbot.controller';
+import { ChatService } from './chatbot.service';
+import { ChunkModule } from '../chunk/chunk.module'
+import { MongooseModule } from '@nestjs/mongoose';
+import { Message, MessageSchema } from './schemas/message.schema';
+import { Session, SessionSchema } from './schemas/session.schema';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ChatBotLog]), ChunkModule],
-  controllers: [ChatbotController],
-  providers: [ChatbotService],
-  exports: [ChatbotService],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Session.name, schema: SessionSchema },
+      { name: Message.name, schema: MessageSchema },
+    ]),
+    ChunkModule,
+  ],
+  controllers: [ChatController],
+  providers: [ChatService],
+  exports: [ChatService],
 })
 export class ChatbotModule {}

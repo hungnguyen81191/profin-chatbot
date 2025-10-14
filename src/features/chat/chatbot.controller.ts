@@ -1,42 +1,49 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Req,
-  Res,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
-import { ChatbotService } from './chatbot.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { Request, Response } from 'express';
+import { Controller, Post, Get, Body, Param, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { ChatService } from './chatbot.service';
+import { Message } from './schemas/message.schema';
+import { Image } from 'openai/resources/images';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('chat')
-export class ChatbotController {
-  constructor(private readonly chatService: ChatbotService) {}
+export class ChatController {
+  constructor(private readonly chatService: ChatService) {}
 
-  @Get()
-  async getChats() {
-    try {
-      const chats = await this.chatService.getAllChats();
-      return chats;
-    } catch (error) {
-      console.error('Error:', error);
-    }
+  @Post('message')
+  @UseInterceptors(FilesInterceptor('images', 10, {
+      storage: diskStorage({
+        destination: './uploads', // Thư mục lưu file
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async addMessage(
+    @Body() Body: { sessionId: string; message: Message},
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    const base64Images = images.map((file) =>
+      file.buffer ? file.buffer.toString('base64') : '',
+    );
+    return this.chatService.addMessage(Body.sessionId, Body.message, base64Images);
   }
 
-  @Post('lastest-reply')
-  async getLastestReply(@Body() req: any) {
-    return this.chatService.getLastestReply(req);
+  @Get('session/:id')
+  async getSession(@Param('id') id: string) {
+    return this.chatService.getSession(id);
   }
 
-  @Post()
-  @UseInterceptors(FileInterceptor('file'))
-  async sendMessage(
-    @UploadedFile() files: Express.Multer.File[],
-    @Body() body: any,
-  ): Promise<{ reply: string }> {
-    return this.chatService.sendMessage(body, files);
+  @Get('sessions')
+  async listSessions() {
+    return this.chatService.listSessions();
+  }
+
+  @Get('session-histories')
+  async getAllSession(@Query('username') username: string) {
+    return this.chatService.getAllSession(username)
   }
 }
